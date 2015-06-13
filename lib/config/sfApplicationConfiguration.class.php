@@ -18,6 +18,9 @@
  */
 abstract class sfApplicationConfiguration extends ProjectConfiguration
 {
+  static private
+    $cacheConfigPaths = [];
+
   static protected
     $coreLoaded    = false,
     $loadedHelpers = array();
@@ -572,6 +575,12 @@ abstract class sfApplicationConfiguration extends ProjectConfiguration
    */
   public function getConfigPaths($configPath)
   {
+    $cacheKeyGlobal = md5($configPath);
+    if (isset(self::$cacheConfigPaths[$cacheKeyGlobal]))
+    {
+      return self::$cacheConfigPaths[$cacheKeyGlobal];
+    }
+
     $globalConfigPath = basename(dirname($configPath)).'/'.basename($configPath);
 
     $files = array(
@@ -580,7 +589,15 @@ abstract class sfApplicationConfiguration extends ProjectConfiguration
 
     foreach ($this->getPluginPaths() as $path)
     {
-      if (is_file($file = $path.'/'.$globalConfigPath))
+      $file = $path.'/'.$globalConfigPath;
+      $cacheKeyLocal = md5($file);
+      if (isset(self::$cacheConfigPaths[$cacheKeyLocal]))
+      {
+        continue;
+      }
+
+      self::$cacheConfigPaths[$cacheKeyLocal] = true;
+      if (is_file($file))
       {
         $files[] = $file;                                     // plugins
       }
@@ -595,7 +612,15 @@ abstract class sfApplicationConfiguration extends ProjectConfiguration
 
     foreach ($this->getPluginPaths() as $path)
     {
-      if (is_file($file = $path.'/'.$configPath))
+      $file = $path.'/'.$configPath;
+      $cacheKeyLocal = md5($file);
+      if (isset(self::$cacheConfigPaths[$cacheKeyLocal]))
+      {
+        continue;
+      }
+
+      self::$cacheConfigPaths[$cacheKeyLocal] = true;
+      if (is_file($file))
       {
         $files[] = $file;                                     // plugins
       }
@@ -612,7 +637,8 @@ abstract class sfApplicationConfiguration extends ProjectConfiguration
       }
     }
 
-    return $configs;
+    self::$cacheConfigPaths[$cacheKeyGlobal] = $configs;
+    return self::$cacheConfigPaths[$cacheKeyGlobal];
   }
 
   /**
